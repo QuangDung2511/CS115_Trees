@@ -1,106 +1,110 @@
 import numpy as np
-from collections import Counter
 
-class Node():
-    def __init__(self, feature=None, threshold=None, left=None, right=None,*, value=None):
-        self.feature = feature
-        self.threshold = threshold
-        self.left = left
-        self.right = right
-        self.value = value
+import numpy as np
 
-    def is_leaf_node(self):
-        return self.value is not None
+class Node:
+    def __init__(self, feature_index=None, threshold=None, left=None, right=None, var_red=None, value=None):
+        # Các thuộc tính cho nút quyết định (Decision Node)
+        self.feature_index = feature_index  # Chỉ số của đặc trưng dùng để chia (cột nào?)
+        self.threshold = threshold          # Giá trị ngưỡng để chia (lớn hơn hay nhỏ hơn?)
+        self.left = left                    # Nút con bên trái
+        self.right = right                  # Nút con bên phải
+        self.var_red = var_red              # Mức độ giảm phương sai (thông tin thêm để debug)
+        
+        # Thuộc tính cho nút lá (Leaf Node)
+        self.value = value                  # Giá trị dự đoán (mean của y) nếu đây là nút lá
 
-class DecisionTree():
-    def __init__(self, min_samples_split=2, max_depth=100, n_features=None):
+class DecisionTreeRegressor:
+    def __init__(self, min_samples_split=2, max_depth=2):
+        self.root = None
         self.min_samples_split = min_samples_split
         self.max_depth = max_depth
-        self.n_features = n_features
-        self.root = None
 
     def fit(self, X, y):
-        self.n_features = X.shape[1] if not self.n_features else min(X.shape[1], self.n_features)
-        self.root =self._grow_tree(X, y)
-
-    def _grow_tree(self, X, y, depth=0):
-        n_samples, n_feats = X.shape
-        n_labels = len(np.unique(y))
-
-        #check the stopping criteria
-        if (depth>=self.max_depth or n_labels==1 or n_samples<self.min_samples_split):
-            leaf_value = self._most_common_label(y)
-            return None(value=leaf_value)
-        
-        feat_idxs = np.random.choice(n_feats, self.n_features, replace=False)
-
-        #find the best split
-        best_feature, best_thresh = self._best_split(X, y, feat_idxs)
-
-        #create child nodes
-        left_idxs, right_idxs = self._split(X[:, best_feature], best_thresh)
-        left = self._grow_tree(X[left_idxs, :], y[left_idxs], depth+1)
-        right = self._grow_tree(X[right_idxs, :], y[right_idxs], depth+1)
-
-        return Node(best_feature, best_thresh, left, right)  
-
-    def _best_split(self, X, y, feat_idxs):
-        best_gain = -1
-        split_idx, split_threshold = None, None
-        for feat_idx in feat_idxs:
-            X_column = X[:, feat_idx]
-            thresholds = np.unique(X_column)
-
-            for thr in thresholds:
-                gain = self._information_gain(y, X_column, thr)
-
-                if gain > best_gain:
-                    best_gain = gain
-                    split_idx = feat_idx
-                    split_threshold = thr
-        return split_idx, split_threshold
-    
-    def _information_gain(self, y, X_column, threshold):
-        # parent entropy
-        parent_entropy = self._entropy(y)
-
-        # create children
-        left_idxs, right_idxs = self._split(X_column, threshold)
-
-        if len(left_idxs) == 0 or len(right_idxs) == 0:
-            return 0
-        
-        # calculate the weighted avg. entropy of children
-        n = len(y)
-        n_l, n_r = len(left_idxs), len(right_idxs)
-        e_l, e_r = self._entropy(y[left_idxs]), self._entropy(y[right_idxs])
-        child_entropy = (n_l/n) * e_l + (n_r/n) * e_r
-
-        # calculate the IG
-        information_gain = parent_entropy - child_entropy
-        return information_gain
-
-    def _split(self, X_column, split_thresh):
-        left_idxs = np.argwhere(X_column <= split_thresh).flatten()
-        right_idxs = np.argwhere(X_column > split_thresh).flatten()
-        return left_idxs, right_idxs
-    
-    def _entropy(self, y):
-        hist = np.bincount(y)
-        ps = hist / len(y)
-        return -np.sum([p * np.log(p) for p in ps if p>0])
-
-    def _most_common_label(self, y):
-        counter = Counter(y)
-        counter.most_common(1)[0][0]
+        """Hàm huấn luyện mô hình"""
+        self.root = self.build_tree(X, y)
 
     def predict(self, X):
-        return np.array([self._traverse_tree(x, self.root) for x in X])
+        """Hàm dự đoán cho nhiều mẫu"""
+        return [self.make_prediction(x, self.root) for x in X]
     
-    def _traverse_tree(self, x, node):
-        if node.is_leaf_node():
-            return node.value
+    def calculate_variance_reduction(self, parent, l_child, r_child):
+        weight_l = len(l_child) / len(parent)
+        weight_r = len(r_child) / len(parent)
+        reduction = np.var(parent) - (weight_l * np.var(l_child) + weight_r * np.var(r_child))
+        return reduction
+    
+    def get_best_split(self, dataset, num_samples, num_features):
+            ''' Tìm đặc trưng và ngưỡng tốt nhất để chia dữ liệu '''
+            best_split = {}
+            max_var_red = -float("inf")
+
+            # Duyệt qua từng cột đặc trưng
+            for feature_index in range(num_features):
+                feature_values = dataset[:, feature_index]
+                possible_thresholds = np.unique(feature_values)
+
+                # Duyệt qua từng ngưỡng giá trị của đặc trưng đó
+                for threshold in possible_thresholds:
+                    # Tách dữ liệu thành 2 phần: trái (<= threshold) và phải (> threshold)
+                    dataset_left = np.array([row for row in dataset if row[feature_index] <= threshold])
+                    dataset_right = np.array([row for row in dataset if row[feature_index] > threshold])
+
+                    # Chỉ xét nếu cả 2 bên đều có dữ liệu
+                    if len(dataset_left) > 0 and len(dataset_right) > 0:
+                        y, left_y, right_y = dataset[:, -1], dataset_left[:, -1], dataset_right[:, -1]
+                        
+                        # Tính mức độ giảm phương sai
+                        curr_var_red = self.calculate_variance_reduction(y, left_y, right_y)
+
+                        # Nếu tìm thấy cách chia tốt hơn thì lưu lại
+                        if curr_var_red > max_var_red:
+                            best_split["feature_index"] = feature_index
+                            best_split["threshold"] = threshold
+                            best_split["dataset_left"] = dataset_left
+                            best_split["dataset_right"] = dataset_right
+                            best_split["var_red"] = curr_var_red
+                            max_var_red = curr_var_red
+                            
+            return best_split
+    
+    def build_tree(self, X, y, curr_depth=0):
+        num_samples, num_features = np.shape(X)
+        # Gộp X và y lại để dễ xử lý trong hàm split
+        dataset = np.concatenate((X, y.reshape(-1, 1)), axis=1)
         
-        if x[node.feature] <=node.threshold:
-            return self._traverse_tree(x, node.left)
-        return self._traverse_tree(x, node.right)
+        # Điều kiện dừng (Stopping criteria)
+        if num_samples >= self.min_samples_split and curr_depth <= self.max_depth:
+            # Tìm cách chia tốt nhất
+            best_split = self.get_best_split(dataset, num_samples, num_features)
+            
+            # Nếu tìm được cách chia có lợi (giảm được phương sai)
+            if best_split.get("var_red", 0) > 0:
+                # Xây dựng cây con bên trái
+                left_subtree = self.build_tree(best_split["dataset_left"][:, :-1], 
+                                               best_split["dataset_left"][:, -1], 
+                                               curr_depth + 1)
+                # Xây dựng cây con bên phải
+                right_subtree = self.build_tree(best_split["dataset_right"][:, :-1], 
+                                                best_split["dataset_right"][:, -1], 
+                                                curr_depth + 1)
+                
+                # Trả về Nút quyết định
+                return Node(best_split["feature_index"], best_split["threshold"], 
+                            left_subtree, right_subtree, best_split["var_red"])
+        
+        # Nếu đạt điều kiện dừng, trả về Nút lá (Leaf Node)
+        leaf_value = np.mean(y)
+        return Node(value=leaf_value)
+    
+    def make_prediction(self, x, tree):
+        # Nếu là nút lá, trả về giá trị dự đoán
+        if tree.value is not None:
+            return tree.value
+        
+        # Nếu không, tiếp tục đi xuống cây
+        feature_val = x[tree.feature_index]
+        if feature_val <= tree.threshold:
+            return self.make_prediction(x, tree.left)
+        else:
+            return self.make_prediction(x, tree.right)

@@ -1,7 +1,5 @@
 import numpy as np
 
-import numpy as np
-
 class Node:
     def __init__(self, feature_index=None, threshold=None, left=None, right=None, var_red=None, value=None):
         # Các thuộc tính cho nút quyết định (Decision Node)

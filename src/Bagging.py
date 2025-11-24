@@ -4,7 +4,7 @@ from decision_tree import DecisionTreeRegressor
 class BaggingRegressor:
     def __init__(self, base_tree_cls, n_estimators=10, min_samples_split=2, max_depth=100):
         # base_tree_cls: Class cây quyết định gốc (Decision_Tree)
-        # n_estimators: Số lượng cây con muốn tạo (ví dụ: 10 cây)
+        # n_estimators: Số lượng cây con muốn tạo 
         self.base_tree_cls = base_tree_cls 
         self.n_estimators = n_estimators
         self.min_samples_split = min_samples_split
@@ -39,17 +39,17 @@ class BaggingRegressor:
 
     def predict(self, X):
         # --- PHẦN 3: AGGREGATING (GỘP KẾT QUẢ) ---
-        # --- Phần này SỬA LẠI (Voting -> Averaging) ---
         
         # 1. Lấy dự đoán từ tất cả các cây
         # Kết quả là mảng 2D: (số_lượng_cây, số_mẫu)
         # Ví dụ: Có 5 cây, dự đoán cho 3 mẫu -> Matrix (5, 3)
         tree_preds = np.array([tree.predict(X) for tree in self.trees])
         
-        # 2. Tính TRUNG BÌNH CỘNG (Mean) thay vì đếm phiếu
+        # 2. Tính TRUNG BÌNH CỘNG (Mean) 
         # axis=0 nghĩa là tính dọc theo cột (dọc theo các cây)
-        # Ví dụ: Mẫu 1 được cây A đoán 10, cây B đoán 12 -> Kết quả: (10+12)/2 = 11
+
         y_pred = np.mean(tree_preds, axis=0)
             
         return y_pred
+
 

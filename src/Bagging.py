@@ -1,5 +1,6 @@
+
 import numpy as np
-from decision_tree import DecisionTreeRegressor
+from src.decision_tree import DecisionTreeRegressor
 
 class BaggingRegressor:
     def __init__(self, base_tree_cls, n_estimators=10, min_samples_split=2, max_depth=100):

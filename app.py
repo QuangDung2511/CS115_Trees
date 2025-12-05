@@ -7,6 +7,57 @@ import sys
 import matplotlib.pyplot as plt
 import seaborn as sns
 import traceback  # NEW: For detailed error tracking
+import requests
+from streamlit_lottie import st_lottie
+
+def local_css():
+    st.markdown("""
+    <style>
+        /* 1. Đổi Font chữ sang Google Font (Inter - font rất đẹp cho UI) */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+        
+        html, body, [class*="css"] {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* 2. Làm đẹp nút bấm "Predict" (Gradient chuyển màu) */
+        div.stButton > button {
+            background: linear-gradient(45deg, #00ADB5, #007C85);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 14px 0 rgba(0, 173, 181, 0.39);
+        }
+        
+        div.stButton > button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px 0 rgba(0, 173, 181, 0.29);
+        }
+
+        /* 3. Ẩn Footer "Made with Streamlit" và Menu 3 gạch */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;} /* Ẩn luôn thanh màu cam trên cùng */
+
+        /* 4. Tùy chỉnh khung Metric (Hiển thị Calo) */
+        div[data-testid="stMetricValue"] {
+            font-size: 3rem;
+            color: #00ADB5;
+            text-shadow: 0 0 10px rgba(0, 173, 181, 0.5);
+        }
+        
+        /* 5. Bo tròn các khung input */
+        .stTextInput > div > div > input {
+            border-radius: 10px;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+# GỌI HÀM NAY NGAY ĐẦU CHƯƠNG TRÌNH
+local_css()
 
 # --- 1. SETUP & IMPORTS ---
 st.set_page_config(page_title="Calories Burned Predictor", layout="wide")
@@ -19,7 +70,7 @@ try:
     from src.xgboost import XGBoostRegressor
     from src.decision_tree import DecisionTreeRegressor
     from src.random_forest import RandomForestRegressor
-    from src.bagging import BaggingRegressor
+    from src.Bagging import BaggingRegressor
 except ImportError as e:
     st.error(f"Error importing custom classes: {e}")
     st.stop()
@@ -66,6 +117,17 @@ Enter your workout details on the left to see how many calories each model predi
 """)
 
 # --- 4. SIDEBAR INPUTS ---
+def load_lottieurl(url):
+    r = requests.get(url, timeout=3) 
+    if r.status_code != 200:
+        return None
+    return r.json()
+
+lottie_workout = load_lottieurl("https://lottie.host/7e5eecd1-6458-4d1a-be01-6e432978fb57/OOCkzlhjNq.json")
+    
+with st.sidebar:
+    st_lottie(lottie_workout, height=150, key="workout_anim")
+
 st.sidebar.header("Your Workout Details")
 
 # NEW: Debug Mode Toggle

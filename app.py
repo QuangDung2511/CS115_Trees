@@ -70,7 +70,7 @@ try:
     from src.xgboost import XGBoostRegressor
     from src.decision_tree import DecisionTreeRegressor
     from src.random_forest import RandomForestRegressor
-    from src.Bagging import BaggingRegressor
+    from src.bagging import BaggingRegressor
 except ImportError as e:
     st.error(f"Error importing custom classes: {e}")
     st.stop()
@@ -116,17 +116,28 @@ This app compares **4 Custom Machine Learning Models** built from scratch.
 Enter your workout details on the left to see how many calories each model predicts you burned.
 """)
 
-# --- 4. SIDEBAR INPUTS ---
+# Updated robust function
 def load_lottieurl(url):
-    r = requests.get(url, timeout=3) 
-    if r.status_code != 200:
+    try:
+        # Try to download the animation
+        r = requests.get(url, timeout=3)
+        if r.status_code != 200:
+            return None
+        return r.json()
+    except Exception:
+        # If internet is down or it fails, just return None (no animation)
         return None
-    return r.json()
 
 lottie_workout = load_lottieurl("https://lottie.host/7e5eecd1-6458-4d1a-be01-6e432978fb57/OOCkzlhjNq.json")
     
 with st.sidebar:
-    st_lottie(lottie_workout, height=150, key="workout_anim")
+    # --- SAFETY CHECK ---
+    # Only show the animation if it loaded correctly
+    if lottie_workout:
+        st_lottie(lottie_workout, height=150, key="workout_anim")
+    else:
+        # Fallback if download failed (Optional: show an emoji or nothing)
+        st.markdown("### 🏃‍♂️ Ready to Workout?")
 
 st.sidebar.header("Your Workout Details")
 

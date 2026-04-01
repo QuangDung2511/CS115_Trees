@@ -1,6 +1,6 @@
 # Calories Burned Predictor (Tree-Based Models From Scratch)
 
-Welcome to the **Calories Burned Predictor**! This project focuses on implementing popular tree-based ensemble machine learning algorithms **completely from scratch in Python** and applying them to predict the number of calories a person burns during a workout.
+This project focuses on implementing popular tree-based ensemble machine learning algorithms **completely from scratch in Python** and applying them to predict the number of calories a person burns during a workout.
 
 The project demonstrates the inner workings of Decision Trees, Random Forests, Bagging, and XGBoost, bypassing standard machine learning libraries (like `scikit-learn` or `xgboost`) for the core model logic. It also includes an interactive **Streamlit** web application to let users test the models in real-time.
 

@@ -34,7 +34,9 @@ By implementing these from scratch (using only `NumPy` and `Pandas` for core log
 ### Decision Tree (Variance Reduction)
 Each node in our custom Decision Tree is split by maximizing **Variance Reduction**. For a parent node $P$ split into children $L$ and $R$:
 
-$$ \Delta Var = Var(P) - \left( \frac{n_L}{n_P} Var(L) + \frac{n_R}{n_P} Var(R) \right) $$
+$$
+\Delta Var = Var(P) - \left( \frac{n_L}{n_P} Var(L) + \frac{n_R}{n_P} Var(R) \right)
+$$
 
 where $Var(y) = \frac{1}{n} \sum_{i=1}^{n} (y_i - \bar{y})^2$. The tree builds recursively until a maximum depth or minimum samples split is reached.
 
@@ -46,14 +48,24 @@ where $Var(y) = \frac{1}{n} \sum_{i=1}^{n} (y_i - \bar{y})^2$. The tree builds r
 Our XGBoost implementation follows the mathematical framework described by Chen & Guestrin:
 
 1.  **Objective Function**: We minimize a regularized objective:
-    $$ \mathcal{L}^{(t)} = \sum_{i=1}^n [g_i f_t(x_i) + \frac{1}{2} h_i f_t^2(x_i)] + \gamma T + \frac{1}{2} \lambda \sum_{j=1}^T w_j^2 $$
+
+    $$
+    \mathcal{L}^{(t)} = \sum_{i=1}^n [g_i f_t(x_i) + \frac{1}{2} h_i f_t^2(x_i)] + \gamma T + \frac{1}{2} \lambda \sum_{j=1}^T w_j^2
+    $$
+
     where $g_i$ and $h_i$ are the first and second-order gradients of the loss function.
 
 2.  **Optimal Leaf Weight**:
-    $$ w_j^* = -\frac{\sum_{i \in I_j} g_i}{\sum_{i \in I_j} h_i + \lambda} $$
+
+    $$
+    w_j^* = -\frac{\sum_{i \in I_j} g_i}{\sum_{i \in I_j} h_i + \lambda}
+    $$
 
 3.  **Split Scoring (Gain)**:
-    $$ Gain = \frac{1}{2} \left[ \frac{(\sum_{i \in I_L} g_i)^2}{\sum_{i \in I_L} h_i + \lambda} + \frac{(\sum_{i \in I_R} g_i)^2}{\sum_{i \in I_R} h_i + \lambda} - \frac{(\sum_{i \in I} g_i)^2}{\sum_{i \in I} h_i + \lambda} \right] - \gamma $$
+
+    $$
+    Gain = \frac{1}{2} \left[ \frac{(\sum_{i \in I_L} g_i)^2}{\sum_{i \in I_L} h_i + \lambda} + \frac{(\sum_{i \in I_R} g_i)^2}{\sum_{i \in I_R} h_i + \lambda} - \frac{(\sum_{i \in I} g_i)^2}{\sum_{i \in I} h_i + \lambda} \right] - \gamma
+    $$
 
 4.  **Weighted Quantile Sketch**: To handle large datasets efficiently, we implemented an approximate split finding algorithm that proposes candidate points based on the distribution of feature weights (Hessians).
 
